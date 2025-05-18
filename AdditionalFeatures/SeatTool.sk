@@ -1,0 +1,103 @@
+# This script allows players to create and use seats in Minecraft using a saddle.
+# When a player right-clicks on a block with a saddle, it makes the clicked block a seat.
+# If the player is sneaking while right-clicking, it allows them to set two positions to create a seat in between two blocks.
+on rightclick using saddle:
+    if clicked block is a block:
+        if player is sneaking:
+            if {seatPos1.%player%} is not set:
+                set {seatPos1.%player%} to location of clicked block
+                send "&6&lPosition 1 set to X:%x-pos of {seatPos1.%player%}% Y:%y-pos of {seatPos1.%player%}% Z:%z-pos of {seatPos1.%player%}%" to player
+            else if {seatPos2.%player%} is not set:
+                set {seatPos2.%player%} to location of clicked block
+                send "&6&lPosition 2 set to X:%x-pos of {seatPos2.%player%}% Y:%y-pos of {seatPos2.%player%}% Z:%z-pos of {seatPos2.%player%}%" to player
+                if {seatPos1.%player%} is set:
+                    set {seat::%{seatPos1.%player%}%} to {seatPos2.%player%}
+                    set {seat::%{seatPos2.%player%}%} to {seatPos1.%player%}
+                    send "&6&lSuccessfully made a middle seat!" to player
+                    send "&7- Now you can sit on this block!" to player
+                    remove 1 saddle from player's inventory
+                    delete {seatPos1.%player%}
+                    delete {seatPos2.%player%}
+            else:
+                delete {seatPos1.%player%}
+                delete {seatPos2.%player%}
+                send "&6&lAll positions reset" to player
+        else:
+            set {seat::%location of clicked block%} to location of clicked block
+            send "&6&lSuccessfully made a seat!" to player
+            send "&7- Now you can sit on this block!" to player
+            remove 1 saddle from player's inventory
+
+
+
+# Remove the seat when breaking the block
+# This event checks if the block being broken is a block and if the seat is set at that location.
+# If the seat is set, it deletes the seat and drops a saddle at the location 1.5 blocks above the broken block.
+on break:
+    if {seat::%location of event-block%} is set:
+        if {seat::%location of event-block%} is not {seat::%{seat::%location of event-block%}%}:
+            delete {seat::%{seat::%location of event-block%}%}
+            delete {seat::%location of event-block%}
+            send "&6&lSuccessfully removed the middle seat!" to player
+            drop 1 saddle at location 1.5 blocks above event-block
+            cancel event
+        else:
+            delete {seat::%location of event-block%}
+            send "&6&lSuccessfully removed the seat!" to player
+            drop 1 saddle at location 1.5 blocks above event-block
+            cancel event
+
+
+
+# Sit on the seat when right clicking on it
+# This event checks if the player is right clicking on a block and if the seat is set at that location.
+# If the seat is set, it summons an invisible armor stand at the location 1.5 blocks below the clicked block.
+# The armor stand is set to be small, invisible, invulnerable, and has no base plate.
+# The player is then made to ride the armor stand, and when the player exits the seat,
+# they are teleported to 1 block above the seat.
+# Finally, the armor stand is killed.
+on rightclick:
+    if player's tool is air:
+        if clicked block is not air:
+            if clicked block is a block:
+                if {seat::%location of event-block%} is set:
+                    if {seat::%location of event-block%} is not {seat::%{seat::%location of event-block%}%}:
+                        cancel event
+                        set {_loc1} to {seat::%location of event-block%}
+                        set {_loc2} to {seat::%{seat::%location of event-block%}%}
+                        set {_dist} to distance between {_loc1} and {_loc2} / 2
+                        set {_loc} to {_loc1}
+
+                        if x-pos of {_loc1} is greater than x-pos of {_loc2}:
+                            subtract {_dist} from x-pos of {_loc}
+                        else if x-pos of {_loc1} is less than x-pos of {_loc2}:
+                            add {_dist} to x-pos of {_loc}
+
+                        if z-pos of {_loc1} is greater than z-pos of {_loc2}:
+                            subtract {_dist} from z-pos of {_loc}
+                        else if z-pos of {_loc1} is less than z-pos of {_loc2}:
+                            add {_dist} to z-pos of {_loc}
+
+                        set {_loc} to location 0.5 below {_loc}
+                        execute console command "/summon minecraft:armor_stand %x-pos of {_loc}% %y-pos of {_loc}% %z-pos of {_loc}% {CustomNameVisible:0,NoGravity:1,Small:1,Invisible:1,Invulnerable:1,NoBasePlate:1,DisabledSlots:2039583}"
+                        set {_seat} to nearest entity in radius 1 around {_loc}
+                        teleport {_seat} to {_loc}
+                        make player ride {_seat}
+                        while player is riding:
+                            wait 5 ticks
+                            set yaw of {_seat} to yaw of player
+                            set pitch of {_seat} to pitch of player
+                        teleport player to location 1 block above event-block
+                        kill {_seat}
+                    else:
+                        cancel event
+                        set {_loc} to location 0.5 below event-block
+                        execute console command "/summon minecraft:armor_stand %x-pos of {_loc}% %y-pos of {_loc}% %z-pos of {_loc}% {CustomNameVisible:0,NoGravity:1,Small:1,Invisible:1,Invulnerable:1,NoBasePlate:1,DisabledSlots:2039583}"
+                        set {_seat} to nearest entity in radius 1 around {_loc}
+                        make player ride {_seat}
+                        while player is riding:
+                            wait 5 ticks
+                            set yaw of {_seat} to yaw of player
+                            set pitch of {_seat} to pitch of player
+                        teleport player to location 1 block above event-block
+                        kill {_seat}

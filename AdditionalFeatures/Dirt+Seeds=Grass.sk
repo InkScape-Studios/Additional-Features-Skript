@@ -1,0 +1,3 @@
+on rightclick on dirt holding wheat seeds:
+    set event-block to grass block
+    remove 1 wheat seeds from player's inventory

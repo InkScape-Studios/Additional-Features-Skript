@@ -1,0 +1,11 @@
+# This script aims to fix mushrooms sometimes not placing correctly on certain blocks.
+# It allows players to place mushrooms on specific blocks when right-clicking with a mushroom in hand.
+aliases:
+    mushroom = red mushroom, brown mushroom
+    placement block = grass block, dirt, coarse dirt, podzol, mycelium, stone, stone bricks, mossy stone bricks, cobblestone, cobblestone wall, mossy cobblestone wall, andesite, diorite, granite, polished andesite, polished diorite, polished granite, sandstone, red sandstone, smooth sandstone, smooth red sandstone, clay, terracotta
+
+on rightclick using mushroom:
+    if clicked block is placement block:
+        if block above clicked block is air:
+            set block above clicked block to player's tool
+            remove 1 of tool from tool

@@ -1,0 +1,112 @@
+aliases:
+    any fence = oak fence, spruce fence, birch fence, jungle fence, acacia fence, dark oak fence, crimson fence, warped fence
+
+
+
+# Function to connect fences using leads
+# This function checks if the two positions are set and if they are not too close to each other.
+# If they are valid, it summons invisible rabbits at the positions and leashes them together.
+# It also updates the connected fences map to keep track of the connection.
+local function connectFences(p: player):
+    if {leadPos1.%{_p}%} is set:
+        if {leadPos2.%{_p}%} is set:
+            if {leadPos1.%{_p}%} is not {leadPos2.%{_p}%}:
+                if distance between {leadPos1.%{_p}%} and {leadPos2.%{_p}%} is less than 2:
+                    send "&c&lFences need to be further apart!" to {_p}
+                    delete {leadPos1.%{_p}%}
+                    delete {leadPos2.%{_p}%}
+                else if distance between {leadPos1.%{_p}%} and {leadPos2.%{_p}%} is greater than 10:
+                    send "&c&lFences need to be closer!" to {_p}
+                    delete {leadPos1.%{_p}%}
+                    delete {leadPos2.%{_p}%}
+                else:
+                    execute console command "/summon minecraft:rabbit %x-pos of {leadPos1.%{_p}%}% %y-pos of {leadPos1.%{_p}%}% %z-pos of {leadPos1.%{_p}%}% {Silent:1,Invulnerable:1,NoAI:1,PersistenceRequired:1,NoGravity:1}"
+                    set {_leadPos1.rabbit} to nearest entity in radius 1 around {leadPos1.%{_p}%}
+                    loop all entities of type rabbit in radius 1 of {leadPos1.%{_p}%}:
+                        make loop-entity invisible
+                    execute console command "/summon minecraft:rabbit %x-pos of {leadPos2.%{_p}%}% %y-pos of {leadPos2.%{_p}%}% %z-pos of {leadPos2.%{_p}%}% {Silent:1,Invulnerable:1,NoAI:1,PersistenceRequired:1,NoGravity:1}"
+                    set {_leadPos2.rabbit} to nearest entity in radius 1 around {leadPos2.%{_p}%}
+                    loop all entities of type rabbit in radius 1 of {leadPos2.%{_p}%}:
+                        make loop-entity invisible
+                    leash {_leadPos1.rabbit} to {_leadPos2.rabbit}
+                    send "&6&lConnected fences!" to {_p}
+                    remove 1 lead from {_p}'s inventory
+                    set {connectedFences::%{leadPos1.%{_p}%}%} to {leadPos2.%{_p}%}
+                    set {connectedFences::%{leadPos2.%{_p}%}%} to {leadPos1.%{_p}%}
+                    delete {leadPos1.%{_p}%}
+                    delete {leadPos2.%{_p}%}
+
+
+
+# Set positions when player left clicks with lead while sneaking
+# This event checks if the player is sneaking and if the clicked block is a fence.
+# If the first position is not set, it sets it to the clicked block's location.
+# If the second position is not set, it sets it to the clicked block's location.
+# If both positions are set, it calls the connectFences function to connect them.
+on leftclick using lead:
+    if player is sneaking:
+        if clicked block is any fence:
+            if {leadPos1.%player%} is not set:
+                set {leadPos1.%player%} to location of clicked block
+                send "&6&lPosition 1 set to X:%x-pos of {leadPos1.%player%}% Y:%y-pos of {leadPos1.%player%}% Z:%z-pos of {leadPos1.%player%}%" to player
+                connectFences(player)
+            else if {leadPos2.%player%} is not set:
+                set {leadPos2.%player%} to location of clicked block
+                send "&6&lPosition 2 set to X:%x-pos of {leadPos2.%player%}% Y:%y-pos of {leadPos2.%player%}% Z:%z-pos of {leadPos2.%player%}%" to player
+                connectFences(player)
+            else:
+                connectFences(player)
+
+
+
+# Reset positions if player right clicks with lead while sneaking
+# This event checks if the player is sneaking and if the clicked block is a fence.
+# If the first position is set, it deletes it.
+# If the second position is set, it deletes it.
+# It sends a message to the player indicating that all positions have been reset.
+on rightclick using lead:
+    if player is sneaking:
+        if clicked block is any fence:
+            if {leadPos1.%player%} is set:
+                delete {leadPos1.%player%}
+            if {leadPos2.%player%} is set:
+                delete {leadPos2.%player%}
+            send "&6&lAll positions reset" to player
+
+
+
+# Disconnect fences when right clicking on a rabbit or breaking a fence
+# This event checks if the player right clicks on a rabbit or breaks a fence.
+# If the position of the clicked entity or broken fence is set in the connected fences map,
+# it drops a lead at the position of the clicked entity or broken fence.
+# It then sets the lead positions to the nearest entities around the connected fences.
+# It teleports the rabbits 1000 blocks below their positions, waits for 1 tick,
+# kills the rabbits, and deletes the connected fences from the map.
+# Finally, it sends a message to the player indicating that the fences have been disconnected.
+on rightclick on a rabbit:
+    if {connectedFences::%position of clicked entity%} is set:
+        drop 1 lead at position of clicked entity
+        set {_leadPos1.rabbit} to nearest entity in radius 1 around {connectedFences::%position of clicked entity%}
+        set {_leadPos2.rabbit} to nearest entity in radius 1 around {connectedFences::%{connectedFences::%position of clicked entity%}%}
+        teleport {_leadPos1.rabbit} 1000 blocks below {_leadPos1.rabbit}
+        teleport {_leadPos2.rabbit} 1000 blocks below {_leadPos2.rabbit}
+        wait 1 ticks
+        kill {_leadPos1.rabbit}
+        kill {_leadPos2.rabbit}
+        delete {connectedFences::%{connectedFences::%position of clicked entity%}%}
+        delete {connectedFences::%position of clicked entity%}
+        send "&6&lDisconnected fences!" to player
+
+on break of any fence:
+    if {connectedFences::%position of event-block%} is set:
+        drop 1 lead at position of event-block
+        set {_leadPos1.rabbit} to nearest entity in radius 1 around {connectedFences::%position of event-block%}
+        set {_leadPos2.rabbit} to nearest entity in radius 1 around {connectedFences::%{connectedFences::%position of event-block%}%}
+        teleport {_leadPos1.rabbit} 1000 blocks below {_leadPos1.rabbit}
+        teleport {_leadPos2.rabbit} 1000 blocks below {_leadPos2.rabbit}
+        wait 1 ticks
+        kill {_leadPos1.rabbit}
+        kill {_leadPos2.rabbit}
+        delete {connectedFences::%{connectedFences::%position of event-block%}%}
+        delete {connectedFences::%position of event-block%}
+        send "&6&lDisconnected fences!" to player
