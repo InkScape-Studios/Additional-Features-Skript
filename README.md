@@ -1,3 +1,4 @@
+![Additional Features Logo](https://github.com/InkScape-Studios/Additional-Features-Skript/blob/main/Assets/Additional%20Features%20Logo.png?raw=true)
 # Additional Features [Skript]
 This is a collection of Skript files that aim to add new or fix features and mechanics on your Minecraft server.
 
