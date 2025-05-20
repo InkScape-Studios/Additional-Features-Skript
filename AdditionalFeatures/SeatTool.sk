@@ -58,46 +58,45 @@ on break:
 # Finally, the armor stand is killed.
 on rightclick:
     if player's tool is air:
-        if clicked block is not air:
-            if clicked block is a block:
-                if {seat::%location of event-block%} is set:
-                    if {seat::%location of event-block%} is not {seat::%{seat::%location of event-block%}%}:
-                        cancel event
-                        set {_loc1} to {seat::%location of event-block%}
-                        set {_loc2} to {seat::%{seat::%location of event-block%}%}
-                        set {_dist} to distance between {_loc1} and {_loc2} / 2
-                        set {_loc} to {_loc1}
+        if event-block is set:
+            if {seat::%location of event-block%} is set:
+                if {seat::%location of event-block%} is not {seat::%{seat::%location of event-block%}%}:
+                    cancel event
+                    set {_loc1} to {seat::%location of event-block%}
+                    set {_loc2} to {seat::%{seat::%location of event-block%}%}
+                    set {_dist} to distance between {_loc1} and {_loc2} / 2
+                    set {_loc} to {_loc1}
 
-                        if x-pos of {_loc1} is greater than x-pos of {_loc2}:
-                            subtract {_dist} from x-pos of {_loc}
-                        else if x-pos of {_loc1} is less than x-pos of {_loc2}:
-                            add {_dist} to x-pos of {_loc}
+                    if x-pos of {_loc1} is greater than x-pos of {_loc2}:
+                        subtract {_dist} from x-pos of {_loc}
+                    else if x-pos of {_loc1} is less than x-pos of {_loc2}:
+                        add {_dist} to x-pos of {_loc}
 
-                        if z-pos of {_loc1} is greater than z-pos of {_loc2}:
-                            subtract {_dist} from z-pos of {_loc}
-                        else if z-pos of {_loc1} is less than z-pos of {_loc2}:
-                            add {_dist} to z-pos of {_loc}
+                    if z-pos of {_loc1} is greater than z-pos of {_loc2}:
+                        subtract {_dist} from z-pos of {_loc}
+                    else if z-pos of {_loc1} is less than z-pos of {_loc2}:
+                        add {_dist} to z-pos of {_loc}
 
-                        set {_loc} to location 0.5 below {_loc}
-                        execute console command "/summon minecraft:armor_stand %x-pos of {_loc}% %y-pos of {_loc}% %z-pos of {_loc}% {CustomNameVisible:0,NoGravity:1,Small:1,Invisible:1,Invulnerable:1,NoBasePlate:1,DisabledSlots:2039583}"
-                        set {_seat} to nearest entity in radius 1 around {_loc}
-                        teleport {_seat} to {_loc}
-                        make player ride {_seat}
-                        while player is riding:
-                            wait 5 ticks
-                            set yaw of {_seat} to yaw of player
-                            set pitch of {_seat} to pitch of player
-                        teleport player to location 1 block above event-block
-                        kill {_seat}
-                    else:
-                        cancel event
-                        set {_loc} to location 0.5 below event-block
-                        execute console command "/summon minecraft:armor_stand %x-pos of {_loc}% %y-pos of {_loc}% %z-pos of {_loc}% {CustomNameVisible:0,NoGravity:1,Small:1,Invisible:1,Invulnerable:1,NoBasePlate:1,DisabledSlots:2039583}"
-                        set {_seat} to nearest entity in radius 1 around {_loc}
-                        make player ride {_seat}
-                        while player is riding:
-                            wait 5 ticks
-                            set yaw of {_seat} to yaw of player
-                            set pitch of {_seat} to pitch of player
-                        teleport player to location 1 block above event-block
-                        kill {_seat}
+                    set {_loc} to location 0.5 below {_loc}
+                    execute console command "/summon minecraft:armor_stand %x-pos of {_loc}% %y-pos of {_loc}% %z-pos of {_loc}% {CustomNameVisible:0,NoGravity:1,Small:1,Invisible:1,Invulnerable:1,NoBasePlate:1,DisabledSlots:2039583}"
+                    set {_seat} to nearest entity in radius 1 around {_loc}
+                    teleport {_seat} to {_loc}
+                    make player ride {_seat}
+                    while player is riding:
+                        wait 5 ticks
+                        set yaw of {_seat} to yaw of player
+                        set pitch of {_seat} to pitch of player
+                    teleport player to location 1 block above event-block
+                    kill {_seat}
+                else:
+                    cancel event
+                    set {_loc} to location 0.5 below event-block
+                    execute console command "/summon minecraft:armor_stand %x-pos of {_loc}% %y-pos of {_loc}% %z-pos of {_loc}% {CustomNameVisible:0,NoGravity:1,Small:1,Invisible:1,Invulnerable:1,NoBasePlate:1,DisabledSlots:2039583}"
+                    set {_seat} to nearest entity in radius 1 around {_loc}
+                    make player ride {_seat}
+                    while player is riding:
+                        wait 5 ticks
+                        set yaw of {_seat} to yaw of player
+                        set pitch of {_seat} to pitch of player
+                    teleport player to location 1 block above event-block
+                    kill {_seat}

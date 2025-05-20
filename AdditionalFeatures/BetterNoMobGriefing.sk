@@ -1,0 +1,109 @@
+# This script aims to fix the NoMobGriefing gamerule in Minecraft.
+# Normally, this gamerule prevents any mob from changing blocks in any way.
+# That also includes villager farmers, they won't be able to harvest crops.
+# And villager breeding won't work either.
+# This script allows you to have NoMobGriefing enabled, so farmers can harvest crops and villager breeding works,
+# but it still prevents explosions by for example creepers or ghasts from destroying the world.
+# And it does this in style, by having the blocks explode and then rebuild the blocks after a few seconds.
+# This script is not perfect, but it works well enough for most cases.
+
+# Features:
+# - Prevents explosions from destroying blocks
+# - Rebuilds the blocks after a few seconds
+# - Rebuilds chests with their contents
+
+# -------------------------------------------------------------------------------
+
+# This function is called for each block that is exploded.
+# It takes the location of the explosion, the block that was exploded, and the amount of blocks that were exploded.
+local function ExplodeBlock(location: location, block: block, amount: number):
+    # Get the location and type of the block that was exploded
+    set {_loc} to location of {_block}
+    set {_type} to type of {_block}
+
+    # Check if the exploded block is tnt
+    # If it is, instead of rebuilding the block, spawn a primed tnt at the location
+    # and stop the function
+    if {_type} is tnt:
+        spawn primed tnt at {_loc}
+        stop
+
+    # Check if the exploded block is air
+    # If it is, nothing needs to be done, so stop the function
+    if {_type} is air:
+        stop
+
+    # Check if the exploded block is a chest
+    # If it is, check if the chest has items in it
+    # If it does, loop through the items in the chest and store them in a variable saved using the location of the chest
+    # The variable is saved as a list, so the items can be retrieved later when rebuilding the chest
+    if block at {_loc} is chest:
+        if items in {_block} is set:
+            set {_n} to 0
+            loop items in {_block}:
+                set {ExplosionChestContents::%{_loc}%::%{_n}%} to loop-item
+                add 1 to {_n}
+
+    # This part of the code is used to set the base delay for when the blocks should start rebuilding
+    # It checks if the base delay is set for the explosion
+    # If it is not set, it sets the base delay
+    if {ExplosionRebuildTime::%{_location}%} is not set:
+        set {ExplosionRebuildTime::%{_location}%} to 5
+
+    # Now that the base delay is set, we can add an extra delay for each block that was exploded,
+    # so that the blocks don't all rebuild at the same time but rather in sequence
+    # This is done by adding 0.1 seconds for each block that was exploded
+    add 0.1 to {ExplosionRebuildTime::%{_location}%}
+
+    # Now we parse the saved delay as a timespan and wait for that amount of time
+    set {_wait} to "%{ExplosionRebuildTime::%{_location}%}% seconds" parsed as timespan
+    wait {_wait}
+
+    # Now that the wait is over, we can start rebuilding the blocks
+    # First we need to account for faling blocks, when they get set they can fall if there is no block below them
+    # A workaround for this is to check if the block at the location we are trying to rebuild is not air,
+    # if it is not air, that means a block has fallen to this location
+    # A simple solution for this is to change the location to 1 block above this location so we are filling the block that was fallen
+    # This is done by using a while loop that checks if the block at the location is not air
+    # If it is not air, we set the location to 1 block above the block at the location
+    while block at {_loc} is not air:
+        set {_loc} to location 1 block above block at {_loc}
+
+    # Now we can set the block at the location to the type of the block that was exploded to rebuild it
+    set block at {_loc} to {_type}
+
+    # Check if the block we just rebuilt is a chest
+    # If it is, we need to retrieve the items that were stored in a variable using the location of the chest
+    # We loop through the items in the variable and place them in the chest
+    # After the loop is done, we delete the variable that was used to store the items to clean up
+    if block at {_loc} is chest:
+        set {_chest} to block at {_loc}
+        set {_n} to 0
+        loop items in {ExplosionChestContents::%{_loc}%::*}:
+            set slot {_n} of {_chest}'s inventory to loop-value
+            add 1 to {_n}
+        delete {ExplosionChestContents::%{_loc}%::*}
+    
+    # Now we need to check if the block we just rebuilt is the last block in the rebuild sequence
+    # so we can delete the delay variable that was used to store the base delay for the blocks
+    # We do this by first calculating the full rebuild time for all blocks that were exploded
+    # This is done by multiplying the amount of blocks that were exploded by the per block delay,
+    # and then adding the base delay to it
+    # If the current delay time is equal to the calculated full rebuild time,
+    # that means we are at the last block in the rebuild sequence
+    # and we can delete the delay variable
+    set {_calc} to 0.1 * {_amount}
+    add 5 to {_calc}
+    if {ExplosionRebuildTime::%{_location}%} is equal to {_calc}:
+        delete {ExplosionRebuildTime::%{_location}%}
+
+
+# This event is called when a block is exploded
+# Sometimes a creeper explosion won't show up so we first create a fake explosion
+# Then we loop through the blocks that were exploded and call the ExplodeBlock function for each block
+# After calling the function, we set the block to air to remove it from the world as if it was exploded
+on explode:
+    create a safe explosion of force 3 at event-location
+    loop exploded blocks:
+        ExplodeBlock(event-location, loop-value, the amount of exploded blocks)
+        set loop-value to air
